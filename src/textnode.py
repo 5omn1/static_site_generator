@@ -21,9 +21,9 @@ class TextNode:
             return False
 
         return (
-            self.text == other.text,
-            self.text_type == other.text_type,
-            self.url == other.url,
+            self.text == other.text
+            and self.text_type == other.text_type
+            and self.url == other.url
         )
 
     def __repr__(self):
