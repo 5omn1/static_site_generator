@@ -1,6 +1,13 @@
 import unittest
 
-from textnode import TextNode, TextType, text_node_to_html_node, split_nodes_delimiter
+from textnode import (
+    TextNode,
+    TextType,
+    text_node_to_html_node,
+    split_nodes_delimiter,
+    extract_markdown_images,
+    extract_markdown_links,
+)
 
 
 class TestTextNode(unittest.TestCase):
@@ -140,6 +147,69 @@ class TestTextNode(unittest.TestCase):
             TextNode(" z", TextType.TEXT),
         ]
         self.assertEqual(new_nodes, expected)
+
+    def test_extract_markdown_images_multiple(self):
+        text = (
+            "This is text with a ![rick roll](https://i.imgur.com/aKaOqIh.gif) "
+            "and ![obi wan](https://i.imgur.com/fJRm4Vk.jpeg)"
+        )
+        expected = [
+            ("rick roll", "https://i.imgur.com/aKaOqIh.gif"),
+            ("obi wan", "https://i.imgur.com/fJRm4Vk.jpeg"),
+        ]
+        self.assertEqual(extract_markdown_images(text), expected)
+
+    def test_extract_markdown_images_none(self):
+        text = "No images here, just text and a [link](https://example.com)."
+        self.assertEqual(extract_markdown_images(text), [])
+
+    def test_extract_markdown_images_allows_empty_alt(self):
+        text = "Empty alt: ![](https://example.com/x.png)"
+        expected = [("", "https://example.com/x.png")]
+        self.assertEqual(extract_markdown_images(text), expected)
+
+    def test_extract_markdown_images_does_not_match_normal_links(self):
+        text = "A normal link: [OpenAI](https://openai.com)"
+        self.assertEqual(extract_markdown_images(text), [])
+
+    # ---- extract_markdown_links ----
+
+    def test_extract_markdown_links_multiple(self):
+        text = (
+            "This has [OpenAI](https://openai.com) and "
+            "[Example](https://example.com/page)."
+        )
+        expected = [
+            ("OpenAI", "https://openai.com"),
+            ("Example", "https://example.com/page"),
+        ]
+        self.assertEqual(extract_markdown_links(text), expected)
+
+    def test_extract_markdown_links_none(self):
+        text = "No links here, just ![img](https://example.com/a.png)."
+        self.assertEqual(extract_markdown_links(text), [])
+
+    def test_extract_markdown_links_does_not_match_images(self):
+        text = "An image: ![alt](https://example.com/a.png)"
+        self.assertEqual(extract_markdown_links(text), [])
+
+    def test_extract_markdown_links_mixed_links_and_images(self):
+        text = (
+            "Mix: ![pic](https://img.com/a.png) and "
+            "[site](https://example.com) and "
+            "![pic2](https://img.com/b.png) and "
+            "[docs](https://example.com/docs)"
+        )
+        expected = [
+            ("site", "https://example.com"),
+            ("docs", "https://example.com/docs"),
+        ]
+        self.assertEqual(extract_markdown_links(text), expected)
+
+    def test_extract_markdown_links_allows_empty_anchor_and_url(self):
+        text = "Empty: []()"
+        expected = [("", "")]
+        self.assertEqual(extract_markdown_links(text), expected)
 
 
 if __name__ == "__main__":
