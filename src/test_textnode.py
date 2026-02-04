@@ -1,6 +1,6 @@
 import unittest
 
-from textnode import TextNode, TextType, text_node_to_html_node
+from textnode import TextNode, TextType, text_node_to_html_node, split_nodes_delimiter
 
 
 class TestTextNode(unittest.TestCase):
@@ -78,6 +78,68 @@ class TestTextNode(unittest.TestCase):
         node = TextNode("Broken image", TextType.IMAGE)
         with self.assertRaises(ValueError):
             text_node_to_html_node(node)
+
+    def test_splits_single_code_block(self):
+        node = TextNode("This is text with a `code block` word", TextType.TEXT)
+        new_nodes = split_nodes_delimiter([node], "`", TextType.CODE)
+
+        expected = [
+            TextNode("This is text with a ", TextType.TEXT),
+            TextNode("code block", TextType.CODE),
+            TextNode(" word", TextType.TEXT),
+        ]
+        self.assertEqual(new_nodes, expected)
+
+    def test_leaves_non_text_nodes_unchanged(self):
+        node = TextNode("already bold", TextType.BOLD)
+        new_nodes = split_nodes_delimiter([node], "`", TextType.CODE)
+        self.assertEqual(new_nodes, [node])
+
+    def test_multiple_code_blocks_in_one_node(self):
+        node = TextNode("a `b` c `d` e", TextType.TEXT)
+        new_nodes = split_nodes_delimiter([node], "`", TextType.CODE)
+
+        expected = [
+            TextNode("a ", TextType.TEXT),
+            TextNode("b", TextType.CODE),
+            TextNode(" c ", TextType.TEXT),
+            TextNode("d", TextType.CODE),
+            TextNode(" e", TextType.TEXT),
+        ]
+        self.assertEqual(new_nodes, expected)
+
+    def test_does_not_create_empty_nodes_when_delimiters_touch_text_edges(self):
+        node = TextNode("`code`", TextType.TEXT)
+        new_nodes = split_nodes_delimiter([node], "`", TextType.CODE)
+
+        expected = [
+            TextNode("code", TextType.CODE),
+        ]
+        self.assertEqual(new_nodes, expected)
+
+    def test_raises_on_unmatched_delimiter(self):
+        node = TextNode("This is `broken", TextType.TEXT)
+        with self.assertRaises(ValueError):
+            split_nodes_delimiter([node], "`", TextType.CODE)
+
+    def test_splits_only_text_nodes_in_mixed_list(self):
+        nodes = [
+            TextNode("start `mid` end", TextType.TEXT),
+            TextNode("keep me", TextType.ITALIC),
+            TextNode("x `y` z", TextType.TEXT),
+        ]
+        new_nodes = split_nodes_delimiter(nodes, "`", TextType.CODE)
+
+        expected = [
+            TextNode("start ", TextType.TEXT),
+            TextNode("mid", TextType.CODE),
+            TextNode(" end", TextType.TEXT),
+            TextNode("keep me", TextType.ITALIC),
+            TextNode("x ", TextType.TEXT),
+            TextNode("y", TextType.CODE),
+            TextNode(" z", TextType.TEXT),
+        ]
+        self.assertEqual(new_nodes, expected)
 
 
 if __name__ == "__main__":
