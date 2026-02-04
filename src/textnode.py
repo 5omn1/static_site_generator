@@ -1,15 +1,15 @@
-from enum import Enum, auto
+from enum import Enum
 from leafnode import LeafNode
 import re
 
 
 class TextType(Enum):
-    TEXT = auto()
-    BOLD = auto()
-    ITALIC = auto()
-    CODE = auto()
-    LINK = auto()
-    IMAGE = auto()
+    TEXT = "text"
+    BOLD = "bold"
+    ITALIC = "italic"
+    CODE = "code"
+    LINK = "link"
+    IMAGE = "image"
 
 
 class TextNode:
@@ -75,6 +75,83 @@ def split_nodes_delimiter(old_nodes, delimiter, text_type):
             else:
                 new_nodes.append(TextNode(part, text_type))
     return new_nodes
+
+
+def split_nodes_image(old_nodes):
+    new_nodes = []
+
+    for node in old_nodes:
+        if node.text_type != TextType.TEXT:
+            new_nodes.append(node)
+            continue
+
+        images = extract_markdown_images(node.text)
+        if len(images) == 0:
+            new_nodes.append(node)
+            continue
+
+        remaining_text = node.text
+        for alt, url in images:
+            image_md = f"![{alt}]({url})"
+            before, after = remaining_text.split(image_md, 1)
+
+            if before != "":
+                new_nodes.append(TextNode(before, TextType.TEXT))
+            new_nodes.append(TextNode(alt, TextType.IMAGE, url))
+            remaining_text = after
+
+        if remaining_text != "":
+            new_nodes.append(TextNode(remaining_text, TextType.TEXT))
+
+    return new_nodes
+
+
+def split_nodes_link(old_nodes):
+    new_nodes = []
+
+    for node in old_nodes:
+        if node.text_type != TextType.TEXT:
+            new_nodes.append(node)
+            continue
+
+        links = extract_markdown_links(node.text)
+
+        if len(links) == 0:
+            new_nodes.append(node)
+            continue
+
+        remaining_text = node.text
+
+        for anchor, url in links:
+            link_md = f"[{anchor}]({url})"
+
+            before, after = remaining_text.split(link_md, 1)
+
+            if before != "":
+                new_nodes.append(TextNode(before, TextType.TEXT))
+
+            new_nodes.append(TextNode(anchor, TextType.LINK, url))
+
+            remaining_text = after
+
+        if remaining_text != "":
+            new_nodes.append(TextNode(remaining_text, TextType.TEXT))
+
+    return new_nodes
+
+
+def text_to_textnodes(text):
+    nodes = [TextNode(text, TextType.TEXT)]
+
+    nodes = split_nodes_delimiter(nodes, "`", TextType.CODE)
+
+    nodes = split_nodes_delimiter(nodes, "**", TextType.BOLD)
+    nodes = split_nodes_delimiter(nodes, "_", TextType.ITALIC)
+
+    nodes = split_nodes_image(nodes)
+    nodes = split_nodes_link(nodes)
+
+    return nodes
 
 
 def extract_markdown_images(text):

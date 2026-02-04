@@ -7,6 +7,9 @@ from textnode import (
     split_nodes_delimiter,
     extract_markdown_images,
     extract_markdown_links,
+    split_nodes_image,
+    split_nodes_link,
+    text_to_textnodes,
 )
 
 
@@ -210,6 +213,173 @@ class TestTextNode(unittest.TestCase):
         text = "Empty: []()"
         expected = [("", "")]
         self.assertEqual(extract_markdown_links(text), expected)
+
+    def test_split_nodes_image_single(self):
+        nodes = [TextNode("Hello ![alt](https://img.com/a.png) world", TextType.TEXT)]
+        new_nodes = split_nodes_image(nodes)
+        expected = [
+            TextNode("Hello ", TextType.TEXT),
+            TextNode("alt", TextType.IMAGE, "https://img.com/a.png"),
+            TextNode(" world", TextType.TEXT),
+        ]
+        self.assertEqual(new_nodes, expected)
+
+    def test_split_nodes_image_multiple(self):
+        nodes = [TextNode("A ![one](u1) B ![two](u2) C", TextType.TEXT)]
+        new_nodes = split_nodes_image(nodes)
+        expected = [
+            TextNode("A ", TextType.TEXT),
+            TextNode("one", TextType.IMAGE, "u1"),
+            TextNode(" B ", TextType.TEXT),
+            TextNode("two", TextType.IMAGE, "u2"),
+            TextNode(" C", TextType.TEXT),
+        ]
+        self.assertEqual(new_nodes, expected)
+
+    def test_split_nodes_image_no_images_returns_original(self):
+        node = TextNode("Just text here", TextType.TEXT)
+        self.assertEqual(split_nodes_image([node]), [node])
+
+    def test_split_nodes_image_does_not_touch_non_text_nodes(self):
+        node = TextNode("![alt](u)", TextType.CODE)
+        self.assertEqual(split_nodes_image([node]), [node])
+
+    def test_split_nodes_image_skips_empty_text_nodes_edges(self):
+        nodes = [TextNode("![alt](u)", TextType.TEXT)]
+        new_nodes = split_nodes_image(nodes)
+        expected = [TextNode("alt", TextType.IMAGE, "u")]
+        self.assertEqual(new_nodes, expected)
+
+    # ---------- split_nodes_link ----------
+
+    def test_split_nodes_link_single(self):
+        nodes = [TextNode("Hello [site](https://example.com) world", TextType.TEXT)]
+        new_nodes = split_nodes_link(nodes)
+        expected = [
+            TextNode("Hello ", TextType.TEXT),
+            TextNode("site", TextType.LINK, "https://example.com"),
+            TextNode(" world", TextType.TEXT),
+        ]
+        self.assertEqual(new_nodes, expected)
+
+    def test_split_nodes_link_multiple(self):
+        nodes = [TextNode("A [one](u1) B [two](u2) C", TextType.TEXT)]
+        new_nodes = split_nodes_link(nodes)
+        expected = [
+            TextNode("A ", TextType.TEXT),
+            TextNode("one", TextType.LINK, "u1"),
+            TextNode(" B ", TextType.TEXT),
+            TextNode("two", TextType.LINK, "u2"),
+            TextNode(" C", TextType.TEXT),
+        ]
+        self.assertEqual(new_nodes, expected)
+
+    def test_split_nodes_link_no_links_returns_original(self):
+        node = TextNode("Just text here", TextType.TEXT)
+        self.assertEqual(split_nodes_link([node]), [node])
+
+    def test_split_nodes_link_does_not_touch_non_text_nodes(self):
+        node = TextNode("[site](u)", TextType.BOLD)
+        self.assertEqual(split_nodes_link([node]), [node])
+
+    def test_split_nodes_link_does_not_treat_images_as_links(self):
+        nodes = [TextNode("Image ![alt](u) here", TextType.TEXT)]
+        self.assertEqual(split_nodes_link(nodes), nodes)
+
+    def test_split_nodes_link_skips_empty_text_nodes_edges(self):
+        nodes = [TextNode("[site](u)", TextType.TEXT)]
+        new_nodes = split_nodes_link(nodes)
+        expected = [TextNode("site", TextType.LINK, "u")]
+        self.assertEqual(new_nodes, expected)
+
+    def test_text_to_textnodes_full_example(self):
+        text = (
+            "This is **text** with an _italic_ word and a `code block` and an "
+            "![obi wan image](https://i.imgur.com/fJRm4Vk.jpeg) and a "
+            "[link](https://boot.dev)"
+        )
+
+        expected = [
+            TextNode("This is ", TextType.TEXT),
+            TextNode("text", TextType.BOLD),
+            TextNode(" with an ", TextType.TEXT),
+            TextNode("italic", TextType.ITALIC),
+            TextNode(" word and a ", TextType.TEXT),
+            TextNode("code block", TextType.CODE),
+            TextNode(" and an ", TextType.TEXT),
+            TextNode(
+                "obi wan image", TextType.IMAGE, "https://i.imgur.com/fJRm4Vk.jpeg"
+            ),
+            TextNode(" and a ", TextType.TEXT),
+            TextNode("link", TextType.LINK, "https://boot.dev"),
+        ]
+
+        self.assertEqual(text_to_textnodes(text), expected)
+
+    def test_text_to_textnodes_plain_text(self):
+        text = "Just plain text."
+        expected = [TextNode("Just plain text.", TextType.TEXT)]
+        self.assertEqual(text_to_textnodes(text), expected)
+
+    def test_text_to_textnodes_only_bold(self):
+        text = "a **b** c"
+        expected = [
+            TextNode("a ", TextType.TEXT),
+            TextNode("b", TextType.BOLD),
+            TextNode(" c", TextType.TEXT),
+        ]
+        self.assertEqual(text_to_textnodes(text), expected)
+
+    def test_text_to_textnodes_only_italic(self):
+        text = "a _b_ c"
+        expected = [
+            TextNode("a ", TextType.TEXT),
+            TextNode("b", TextType.ITALIC),
+            TextNode(" c", TextType.TEXT),
+        ]
+        self.assertEqual(text_to_textnodes(text), expected)
+
+    def test_text_to_textnodes_only_code(self):
+        text = "a `b` c"
+        expected = [
+            TextNode("a ", TextType.TEXT),
+            TextNode("b", TextType.CODE),
+            TextNode(" c", TextType.TEXT),
+        ]
+        self.assertEqual(text_to_textnodes(text), expected)
+
+    def test_text_to_textnodes_only_image(self):
+        text = "x ![alt](u) y"
+        expected = [
+            TextNode("x ", TextType.TEXT),
+            TextNode("alt", TextType.IMAGE, "u"),
+            TextNode(" y", TextType.TEXT),
+        ]
+        self.assertEqual(text_to_textnodes(text), expected)
+
+    def test_text_to_textnodes_only_link(self):
+        text = "x [a](u) y"
+        expected = [
+            TextNode("x ", TextType.TEXT),
+            TextNode("a", TextType.LINK, "u"),
+            TextNode(" y", TextType.TEXT),
+        ]
+        self.assertEqual(text_to_textnodes(text), expected)
+
+    def test_text_to_textnodes_mixed_multiple(self):
+        text = "**a** _b_ `c` ![d](u1) [e](u2)"
+        expected = [
+            TextNode("a", TextType.BOLD),
+            TextNode(" ", TextType.TEXT),
+            TextNode("b", TextType.ITALIC),
+            TextNode(" ", TextType.TEXT),
+            TextNode("c", TextType.CODE),
+            TextNode(" ", TextType.TEXT),
+            TextNode("d", TextType.IMAGE, "u1"),
+            TextNode(" ", TextType.TEXT),
+            TextNode("e", TextType.LINK, "u2"),
+        ]
+        self.assertEqual(text_to_textnodes(text), expected)
 
 
 if __name__ == "__main__":
