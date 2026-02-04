@@ -1,5 +1,5 @@
 import unittest
-from blocks import markdown_to_blocks
+from blocks import markdown_to_blocks, block_to_block_type, BlockType
 
 
 class TestMarkdownToBlocks(unittest.TestCase):
@@ -64,3 +64,62 @@ Line three"""
             markdown_to_blocks(md),
             ["Line one\nLine two\nLine three"],
         )
+
+    def test_heading_h1(self):
+        self.assertEqual(block_to_block_type("# Hello"), BlockType.HEADING)
+
+    def test_heading_h6(self):
+        self.assertEqual(block_to_block_type("###### Hello"), BlockType.HEADING)
+
+    def test_heading_invalid_no_space(self):
+        self.assertEqual(block_to_block_type("#Hello"), BlockType.PARAGRAPH)
+
+    def test_heading_invalid_too_many_hashes(self):
+        self.assertEqual(block_to_block_type("####### Hello"), BlockType.PARAGRAPH)
+
+    def test_code_block_multiline(self):
+        md = "```\nline1\nline2\n```"
+        self.assertEqual(block_to_block_type(md), BlockType.CODE)
+
+    def test_code_block_invalid_missing_newline_after_ticks(self):
+        md = "```code\n```"
+        self.assertEqual(block_to_block_type(md), BlockType.PARAGRAPH)
+
+    def test_quote_single_line(self):
+        self.assertEqual(block_to_block_type("> quote"), BlockType.QUOTE)
+
+    def test_quote_multiline(self):
+        md = "> q1\n>q2\n> q3"
+        self.assertEqual(block_to_block_type(md), BlockType.QUOTE)
+
+    def test_quote_invalid_mixed_lines(self):
+        md = "> q1\nnot quote"
+        self.assertEqual(block_to_block_type(md), BlockType.PARAGRAPH)
+
+    def test_unordered_list(self):
+        md = "- a\n- b\n- c"
+        self.assertEqual(block_to_block_type(md), BlockType.UNORDERED_LIST)
+
+    def test_unordered_list_invalid_missing_space(self):
+        md = "- a\n-b"
+        self.assertEqual(block_to_block_type(md), BlockType.PARAGRAPH)
+
+    def test_ordered_list_valid(self):
+        md = "1. a\n2. b\n3. c"
+        self.assertEqual(block_to_block_type(md), BlockType.ORDERED_LIST)
+
+    def test_ordered_list_invalid_not_starting_at_one(self):
+        md = "2. a\n3. b"
+        self.assertEqual(block_to_block_type(md), BlockType.PARAGRAPH)
+
+    def test_ordered_list_invalid_not_incrementing(self):
+        md = "1. a\n3. b"
+        self.assertEqual(block_to_block_type(md), BlockType.PARAGRAPH)
+
+    def test_ordered_list_invalid_missing_space(self):
+        md = "1. a\n2.b"
+        self.assertEqual(block_to_block_type(md), BlockType.PARAGRAPH)
+
+    def test_paragraph_default(self):
+        md = "This is a normal paragraph.\nStill same block."
+        self.assertEqual(block_to_block_type(md), BlockType.PARAGRAPH)

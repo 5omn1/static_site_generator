@@ -1,15 +1,15 @@
-from enum import Enum
+from enum import Enum, auto
 from leafnode import LeafNode
 import re
 
 
 class TextType(Enum):
-    TEXT = "text"
-    BOLD = "bold"
-    ITALIC = "italic"
-    CODE = "code"
-    LINK = "link"
-    IMAGE = "image"
+    TEXT = auto()
+    BOLD = auto()
+    ITALIC = auto()
+    CODE = auto()
+    LINK = auto()
+    IMAGE = auto()
 
 
 class TextNode:
