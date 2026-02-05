@@ -1,18 +1,21 @@
+import sys
 from textnode import TextNode, TextType
 from copy_dir import copy_dir_recursive
 from generate import generate_page, generate_pages_recursive
 
 
 def main():
-    text_node = TextNode(
-        "This is some anchor text", TextType.LINK, "https://www.boot.dev"
-    )
-    print(text_node)
+    basepath = sys.argv[1] if len(sys.argv) > 1 else "/"
+    if not basepath.startswith("/"):
+        basepath = "/" + basepath
+    if not basepath.endswith("/"):
+        basepath = basepath + "/"
 
-    copy_dir_recursive("static", "public")
+    output_dir = "docs"
 
-    generate_page("content/index.md", "template.html", "public/index.html")
-    generate_pages_recursive("content", "template.html", "public")
+    copy_dir_recursive("static", output_dir)
+
+    generate_pages_recursive("content", "template.html", output_dir, basepath)
 
 
 if __name__ == "__main__":
