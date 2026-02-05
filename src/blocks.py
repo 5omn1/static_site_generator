@@ -41,10 +41,15 @@ def block_to_block_type(block):
 
 
 def markdown_to_blocks(markdown):
-    raw_blocks = markdown.split("\n\n")
+    markdown = markdown.strip()
+    if markdown == "":
+        return []
+
+    raw_blocks = re.split(r"\n\s*\n", markdown)
+
     blocks = []
-    for block in raw_blocks:
-        stripped = block.strip()
-        if stripped != "":
-            blocks.append(stripped)
+    for b in raw_blocks:
+        b = b.strip()
+        if b != "":
+            blocks.append(b)
     return blocks
