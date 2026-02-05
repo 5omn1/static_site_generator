@@ -1,7 +1,6 @@
 import sys
-from textnode import TextNode, TextType
 from copy_dir import copy_dir_recursive
-from generate import generate_page, generate_pages_recursive
+from generate import generate_pages_recursive
 
 
 def main():
