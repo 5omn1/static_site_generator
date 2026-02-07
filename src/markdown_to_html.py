@@ -1,49 +1,38 @@
-# markdown_to_html.py (or wherever you keep your markdown pipeline)
-
 from blocks import markdown_to_blocks, block_to_block_type, BlockType
 from parentnode import ParentNode
 from leafnode import LeafNode
-from textnode import text_to_textnodes, text_node_to_html_node
+from textnode import text_to_text_nodes, text_node_to_html_node
 
 
 def text_to_children(text: str):
-    """
-    Convert inline-markdown text into a list of HTMLNodes.
-    Uses your existing pipeline:
-      text -> [TextNode] -> [HTMLNode]
-    """
-    text_nodes = text_to_textnodes(text)
+    text_nodes = text_to_text_nodes(text)
     return [text_node_to_html_node(n) for n in text_nodes]
 
 
 def paragraph_block_to_html_node(block: str):
-    # Paragraphs can span multiple lines; join with spaces (matches your expected tests)
     joined = " ".join(line.strip() for line in block.split("\n"))
     return ParentNode("p", text_to_children(joined))
 
 
 def heading_block_to_html_node(block: str):
-    # block starts with 1-6 #'s then a space (already validated by block_to_block_type)
     level = 0
     while level < len(block) and block[level] == "#":
         level += 1
-    text = block[level + 1 :]  # skip the space after #'s
+    text = block[level + 1 :]
     return ParentNode(f"h{level}", text_to_children(text))
 
 
 def code_block_to_html_node(block: str):
-    # block format: ```\n ... \n```
-    inner = block[4:-3]  # strip "```\n" and trailing "```"
+    inner = block[4:-3]
     code = LeafNode("code", inner)
     return ParentNode("pre", [code])
 
 
 def quote_block_to_html_node(block: str):
-    # Remove leading '>' (space optional) from every line, then join with spaces
     lines = block.split("\n")
     cleaned = []
     for line in lines:
-        line = line[1:]  # remove leading ">"
+        line = line[1:]
         if line.startswith(" "):
             line = line[1:]
         cleaned.append(line)
@@ -62,7 +51,6 @@ def ul_block_to_html_node(block: str):
 def ol_block_to_html_node(block: str):
     items = []
     for line in block.split("\n"):
-        # remove "N. " where N increments; we can split once at ". "
         _, text = line.split(". ", 1)
         items.append(ParentNode("li", text_to_children(text)))
     return ParentNode("ol", items)

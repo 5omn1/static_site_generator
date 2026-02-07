@@ -1,5 +1,4 @@
 import os
-import htmlnode
 from markdown_to_html import markdown_to_html_node
 
 

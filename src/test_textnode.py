@@ -9,7 +9,7 @@ from textnode import (
     extract_markdown_links,
     split_nodes_image,
     split_nodes_link,
-    text_to_textnodes,
+    text_to_text_nodes,
 )
 
 
@@ -314,12 +314,12 @@ class TestTextNode(unittest.TestCase):
             TextNode("link", TextType.LINK, "https://boot.dev"),
         ]
 
-        self.assertEqual(text_to_textnodes(text), expected)
+        self.assertEqual(text_to_text_nodes(text), expected)
 
     def test_text_to_textnodes_plain_text(self):
         text = "Just plain text."
         expected = [TextNode("Just plain text.", TextType.TEXT)]
-        self.assertEqual(text_to_textnodes(text), expected)
+        self.assertEqual(text_to_text_nodes(text), expected)
 
     def test_text_to_textnodes_only_bold(self):
         text = "a **b** c"
@@ -328,7 +328,7 @@ class TestTextNode(unittest.TestCase):
             TextNode("b", TextType.BOLD),
             TextNode(" c", TextType.TEXT),
         ]
-        self.assertEqual(text_to_textnodes(text), expected)
+        self.assertEqual(text_to_text_nodes(text), expected)
 
     def test_text_to_textnodes_only_italic(self):
         text = "a _b_ c"
@@ -337,7 +337,7 @@ class TestTextNode(unittest.TestCase):
             TextNode("b", TextType.ITALIC),
             TextNode(" c", TextType.TEXT),
         ]
-        self.assertEqual(text_to_textnodes(text), expected)
+        self.assertEqual(text_to_text_nodes(text), expected)
 
     def test_text_to_textnodes_only_code(self):
         text = "a `b` c"
@@ -346,7 +346,7 @@ class TestTextNode(unittest.TestCase):
             TextNode("b", TextType.CODE),
             TextNode(" c", TextType.TEXT),
         ]
-        self.assertEqual(text_to_textnodes(text), expected)
+        self.assertEqual(text_to_text_nodes(text), expected)
 
     def test_text_to_textnodes_only_image(self):
         text = "x ![alt](u) y"
@@ -355,7 +355,7 @@ class TestTextNode(unittest.TestCase):
             TextNode("alt", TextType.IMAGE, "u"),
             TextNode(" y", TextType.TEXT),
         ]
-        self.assertEqual(text_to_textnodes(text), expected)
+        self.assertEqual(text_to_text_nodes(text), expected)
 
     def test_text_to_textnodes_only_link(self):
         text = "x [a](u) y"
@@ -364,7 +364,7 @@ class TestTextNode(unittest.TestCase):
             TextNode("a", TextType.LINK, "u"),
             TextNode(" y", TextType.TEXT),
         ]
-        self.assertEqual(text_to_textnodes(text), expected)
+        self.assertEqual(text_to_text_nodes(text), expected)
 
     def test_text_to_textnodes_mixed_multiple(self):
         text = "**a** _b_ `c` ![d](u1) [e](u2)"
@@ -379,7 +379,7 @@ class TestTextNode(unittest.TestCase):
             TextNode(" ", TextType.TEXT),
             TextNode("e", TextType.LINK, "u2"),
         ]
-        self.assertEqual(text_to_textnodes(text), expected)
+        self.assertEqual(text_to_text_nodes(text), expected)
 
 
 if __name__ == "__main__":
